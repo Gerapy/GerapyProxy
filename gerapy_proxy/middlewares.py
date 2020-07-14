@@ -1,7 +1,19 @@
 import requests
 import random
 import logging
+import aiohttp
 from gerapy_proxy.settings import *
+import time
+import asyncio
+import sys
+import twisted.internet
+from twisted.internet.asyncioreactor import AsyncioSelectorReactor
+
+reactor = AsyncioSelectorReactor(asyncio.get_event_loop())
+
+# install AsyncioSelectorReactor
+twisted.internet.reactor = reactor
+sys.modules['twisted.internet.reactor'] = reactor
 
 logger = logging.getLogger(__name__)
 
@@ -29,30 +41,31 @@ class ProxyPoolMiddleware(object):
         cls.proxy_pool_random_enable_rate = settings.get('GERAPY_PROXY_POOL_RANDOM_ENABLE_RATE',
                                                          GERAPY_PROXY_POOL_RANDOM_ENABLE_RATE)
         cls.proxy_pool_timeout = settings.get('GERAPY_PROXY_POOL_TIMEOUT', GERAPY_PROXY_POOL_TIMEOUT)
-        cls.proxy_pool_extract_func = settings.get('GERAPY_PROXY_EXTRACT_FUNC', GERAPY_PROXY_EXTRACT_FUNC)
+        cls.proxy_pool_extract_func = lambda _: settings.get('GERAPY_PROXY_EXTRACT_FUNC', GERAPY_PROXY_EXTRACT_FUNC)
         return cls()
     
-    def get_proxy(self):
+    async def get_proxy(self):
         """
         get proxy from proxy pool
         :return:
         """
         logger.debug('start to get proxy from proxy pool')
+        await asyncio.sleep(10)
         kwargs = {}
         if self.proxy_pool_auth:
-            kwargs['auth'] = (self.proxy_pool_username, self.proxy_pool_password)
+            kwargs['auth'] = aiohttp.BasicAuth(login=self.proxy_pool_username, password=self.proxy_pool_password)
         if self.proxy_pool_timeout:
             kwargs['timeout'] = self.proxy_pool_timeout
         logger.debug('get proxy using kwargs %s', kwargs)
         
-        # get proxy using requests
-        response = requests.get(self.proxy_pool_url, **kwargs)
-        if response.status_code == 200:
-            proxy = self.proxy_pool_extract_func(response.text)
-            logger.debug('get proxy %s', proxy)
-            return proxy
+        async with aiohttp.ClientSession() as client:
+            response = await client.get(self.proxy_pool_url, **kwargs)
+            if response.status == 200:
+                proxy = self.proxy_pool_extract_func()(response.text)
+                logger.debug('get proxy %s', proxy)
+                return proxy
     
-    def process_request(self, request, spider):
+    async def process_request(self, request, spider):
         """
         use proxy pool to process request
         :param request:
@@ -75,7 +88,7 @@ class ProxyPoolMiddleware(object):
                 logger.debug('random number lager than proxy_pool_random_enable_rate, skip')
                 return None
         
-        proxy = self.get_proxy()
+        proxy = await self.get_proxy()
         
         # skip invalid
         if not proxy:

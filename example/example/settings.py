@@ -56,7 +56,7 @@ DOWNLOADER_MIDDLEWARES = {
    'gerapy_proxy.middlewares.ProxyPoolMiddleware': 543,
 }
 
-GERAPY_PROXY_POOL_URL = 'https://proxypool.scrape.center'
+GERAPY_PROXY_POOL_URL = 'https://proxypool.scrape.center/random'
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
