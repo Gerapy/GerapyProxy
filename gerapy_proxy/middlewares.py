@@ -46,7 +46,7 @@ class ProxyPoolMiddleware(object):
         logger.debug('get proxy using kwargs %s', kwargs)
         
         # get proxy using requests
-        response = requests.get(self.proxy_pool_auth, **kwargs)
+        response = requests.get(self.proxy_pool_url, **kwargs)
         if response.status_code == 200:
             proxy = self.proxy_pool_extract_func(response.text)
             logger.debug('get proxy %s', proxy)
