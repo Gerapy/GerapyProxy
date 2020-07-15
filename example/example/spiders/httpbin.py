@@ -32,6 +32,6 @@ class HttpbinSpider(Spider):
         :return:
         """
         data = json.loads(response.text)
-        logger.info(f'request from %s successfully, current page %s',
+        logger.info(f'got request from %s successfully, current page %s',
                     data.get('origin'),
                     response.meta.get('page'))

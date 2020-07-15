@@ -1,9 +1,7 @@
-import requests
 import random
 import logging
 import aiohttp
 from gerapy_proxy.settings import *
-import time
 import asyncio
 import sys
 import twisted.internet
@@ -23,6 +21,16 @@ class ProxyPoolMiddleware(object):
     using proxy pool as proxy
     """
     
+    def _extract_response(self, text):
+        """
+        extract response content
+        :param text:
+        :return:
+        """
+        settings = self.settings
+        extract_func = settings.get('GERAPY_PROXY_EXTRACT_FUNC', GERAPY_PROXY_EXTRACT_FUNC)
+        return extract_func(text)
+    
     @classmethod
     def from_crawler(cls, crawler):
         """
@@ -31,6 +39,7 @@ class ProxyPoolMiddleware(object):
         :return:
         """
         settings = crawler.settings
+        cls.settings = settings
         # proxy pool settings
         cls.proxy_pool_url = settings.get('GERAPY_PROXY_POOL_URL', GERAPY_PROXY_POOL_URL)
         cls.proxy_pool_auth = settings.get('GERAPY_PROXY_POOL_AUTH', GERAPY_PROXY_POOL_AUTH)
@@ -41,7 +50,6 @@ class ProxyPoolMiddleware(object):
         cls.proxy_pool_random_enable_rate = settings.get('GERAPY_PROXY_POOL_RANDOM_ENABLE_RATE',
                                                          GERAPY_PROXY_POOL_RANDOM_ENABLE_RATE)
         cls.proxy_pool_timeout = settings.get('GERAPY_PROXY_POOL_TIMEOUT', GERAPY_PROXY_POOL_TIMEOUT)
-        cls.proxy_pool_extract_func = lambda _: settings.get('GERAPY_PROXY_EXTRACT_FUNC', GERAPY_PROXY_EXTRACT_FUNC)
         return cls()
     
     async def get_proxy(self):
@@ -50,7 +58,6 @@ class ProxyPoolMiddleware(object):
         :return:
         """
         logger.debug('start to get proxy from proxy pool')
-        await asyncio.sleep(10)
         kwargs = {}
         if self.proxy_pool_auth:
             kwargs['auth'] = aiohttp.BasicAuth(login=self.proxy_pool_username, password=self.proxy_pool_password)
@@ -61,7 +68,7 @@ class ProxyPoolMiddleware(object):
         async with aiohttp.ClientSession() as client:
             response = await client.get(self.proxy_pool_url, **kwargs)
             if response.status == 200:
-                proxy = self.proxy_pool_extract_func()(response.text)
+                proxy = self._extract_response(await response.text())
                 logger.debug('get proxy %s', proxy)
                 return proxy
     
