@@ -1,14 +1,12 @@
 import random
 import logging
 import aiohttp
-from aiohttp import ClientTimeout
-
+from gerapy_proxy.exceptions import DefinitionError
 from gerapy_proxy.settings import *
 import asyncio
 import sys
 import twisted.internet
 from twisted.internet.asyncioreactor import AsyncioSelectorReactor
-from merry import Merry
 
 reactor = AsyncioSelectorReactor(asyncio.get_event_loop())
 
@@ -17,9 +15,6 @@ twisted.internet.reactor = reactor
 sys.modules['twisted.internet.reactor'] = reactor
 
 logger = logging.getLogger(__name__)
-
-merry = Merry()
-merry.logger.disabled = True
 
 
 class ProxyPoolMiddleware(object):
@@ -69,6 +64,10 @@ class ProxyPoolMiddleware(object):
             kwargs['auth'] = aiohttp.BasicAuth(login=self.proxy_pool_username, password=self.proxy_pool_password)
         if self.proxy_pool_timeout:
             kwargs['timeout'] = self.proxy_pool_timeout
+        
+        if not self.proxy_pool_url:
+            raise DefinitionError('You must define `GERAPY_PROXY_POOL_URL` in settings')
+        
         kwargs['url'] = self.proxy_pool_url
         logger.debug('get proxy using kwargs %s', kwargs)
         
