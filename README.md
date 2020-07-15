@@ -17,13 +17,7 @@ to integrate proxy into your Scrapy/Gerapy Project.
 For example, there is a [ProxyPool API](https://proxypool.scrape.center/random) which can return a random proxy 
 per time, we can configure `GERAPY_PROXY_POOL_URL` setting provided by this package to enable proxy for every Scrapy Request.
 
-To use this package, firstly install it by this command:
-
-```shell script
-pip3 install gerapy-proxy
-```
-
-Then enable it in DownloadMiddleware:
+To use this package, firstly install it and then enable it in DownloadMiddleware:
 
 ```python
 DOWNLOADER_MIDDLEWARES = {
