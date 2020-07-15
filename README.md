@@ -11,7 +11,7 @@ pip3 install gerapy-proxy
 
 ## Usage
 
-If you have a proxy pool which can provide a random proxy for every request, you can use this package
+If you have a ProxyPool which can provide a random proxy for every request, you can use this package
 to integrate proxy into your Scrapy/Gerapy Project.
 
 For example, there is a [ProxyPool API](https://proxypool.scrape.center/random) which can return a random proxy 
