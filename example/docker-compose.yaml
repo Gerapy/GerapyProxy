@@ -1,0 +1,7 @@
+version: '3'
+services:
+  gerapy-proxy-example:
+    container_name: 'gerapy-proxy-example'
+    build: .
+    image: 'germey/gerapy-proxy-example'
+    command: 'python3 run.py'
