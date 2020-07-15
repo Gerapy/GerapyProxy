@@ -58,6 +58,7 @@ DOWNLOADER_MIDDLEWARES = {
 }
 
 GERAPY_PROXY_POOL_URL = 'https://proxypool.scrape.center/random'
+GERAPY_PROXY_POOL_TIMEOUT = 5
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html

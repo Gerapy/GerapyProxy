@@ -1,11 +1,14 @@
 import random
 import logging
 import aiohttp
+from aiohttp import ClientTimeout
+
 from gerapy_proxy.settings import *
 import asyncio
 import sys
 import twisted.internet
 from twisted.internet.asyncioreactor import AsyncioSelectorReactor
+from merry import Merry
 
 reactor = AsyncioSelectorReactor(asyncio.get_event_loop())
 
@@ -14,6 +17,9 @@ twisted.internet.reactor = reactor
 sys.modules['twisted.internet.reactor'] = reactor
 
 logger = logging.getLogger(__name__)
+
+merry = Merry()
+merry.logger.disabled = True
 
 
 class ProxyPoolMiddleware(object):
@@ -63,14 +69,18 @@ class ProxyPoolMiddleware(object):
             kwargs['auth'] = aiohttp.BasicAuth(login=self.proxy_pool_username, password=self.proxy_pool_password)
         if self.proxy_pool_timeout:
             kwargs['timeout'] = self.proxy_pool_timeout
+        kwargs['url'] = self.proxy_pool_url
         logger.debug('get proxy using kwargs %s', kwargs)
         
-        async with aiohttp.ClientSession() as client:
-            response = await client.get(self.proxy_pool_url, **kwargs)
-            if response.status == 200:
-                proxy = self._extract_response(await response.text())
-                logger.debug('get proxy %s', proxy)
-                return proxy
+        try:
+            async with aiohttp.ClientSession() as client:
+                response = await client.get(**kwargs)
+                if response.status == 200:
+                    proxy = self._extract_response(await response.text())
+                    logger.debug('get proxy %s', proxy)
+                    return proxy
+        except:
+            logger.error('error occurred while fetching proxy', exc_info=True)
     
     async def process_request(self, request, spider):
         """
@@ -85,6 +95,7 @@ class ProxyPoolMiddleware(object):
             logger.debug('current retry times %s', retry_times)
             if not retry_times or retry_times < self.proxy_pool_min_retry_times:
                 logger.debug('retry times less than proxy_pool_min_retry_times')
+                request.meta['proxy'] = None
                 return None
         
         # check random rate
@@ -93,6 +104,7 @@ class ProxyPoolMiddleware(object):
             logger.debug('get random number %s', random_number)
             if random_number > self.proxy_pool_random_enable_rate:
                 logger.debug('random number lager than proxy_pool_random_enable_rate, skip')
+                request.meta['proxy'] = None
                 return None
         
         proxy = await self.get_proxy()
